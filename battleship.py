@@ -69,7 +69,6 @@ def ask_coords():
                 return int(a[0]), alpha.index(a[1])
 
 def get_valid_coords(ships, x, y, signX, signY):
-
     # Look in cardinal directions for possible hits
     for i in range(1, 9):
         if (signX < 0 and i > x) or (signY < 0 and i > y) or (signX > 0 and x + i >= 10) or (signY > 0 and y + i >= 10):
@@ -81,6 +80,35 @@ def get_valid_coords(ships, x, y, signX, signY):
         else:
             # Return None if there is no possible location for the specific direction
             return None, None
+
+def check_coords(ships, x, y, smallest):
+    a = smallest - 1
+    for i in range(1, 10):
+        if x - i >= 0 and ships[x - i][y] in [0, 1, "*"]:
+            a -= 1
+        else:
+            break
+    for i in range(1, 10):
+        if x + i < 10 and ships[x + i][y] in [0, 1, "*"]:
+            a -= 1
+        else:
+            break
+    if a <= 0:
+        return True
+    a = smallest - 1
+    for i in range(1, 10):
+        if y - i >= 0 and ships[x][y - i] in [0, 1, "*"]:
+            a -= 1
+        else:
+            break
+    for i in range(1, 10):
+        if y + i < 10 and ships[x][y + i] in [0, 1, "*"]:
+            a -= 1
+        else:
+            break
+    if a > 0:
+        return False
+    return True
 
 def opponent_turn(ships, brain):
     # Check if a hit was detected last turn
@@ -108,6 +136,9 @@ def opponent_turn(ships, brain):
         x, y = random.randint(0, 9), random.randint(0, 9)
         if ships[x][y] == "*" or ships[x][y] == "s":
             continue
+        pos = brain["smallest"][0]
+        if not check_coords(ships, x, y, pos):
+            continue
         return x, y
 
 def update_board(ships, shipPos, x, y, player, brain = None):
@@ -129,6 +160,7 @@ def update_board(ships, shipPos, x, y, player, brain = None):
                         if player == "Opponent":
                             brain["seen"] = False
                             brain["vert"] = True
+                            brain["smallest"].remove(brain["smallest"][i])
                         # Remove ship
                         shipPos.pop(i)
                         return f"{player}: Ship Sunk on {alpha[y]}{x}!"
@@ -146,11 +178,11 @@ def update_board(ships, shipPos, x, y, player, brain = None):
 
 def game():
     # Initialize opponent's brain, ships, and ship positions
-    opBrain = {"seen": False, "x":0, "y":0, "vert":True} 
     opponent, opShipPos = randomize_ships()
     you, myShipPos = randomize_ships()
     turn = 1
-
+    myShipLen = [len(i) for i in opShipPos]
+    opBrain = {"seen": False, "x":0, "y":0, "vert":True, "smallest":myShipLen} 
     while True:
         # Display boards
         print("Opponent's Board:")
